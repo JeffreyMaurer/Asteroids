@@ -1,51 +1,44 @@
-import pygame
-import random
+import pygame as pg
+import random as r
 from asteroid import Asteroid
 from constants import *
 
+# Needs to inherit from Sprite to get container attribute behavior
+class AsteroidField(pg.sprite.Sprite):
 
-class AsteroidField(pygame.sprite.Sprite):
-    edges = [
-        [
-            pygame.Vector2(1, 0),
-            lambda y: pygame.Vector2(-ASTEROID_MAX_RADIUS, y * SCREEN_HEIGHT),
-        ],
-        [
-            pygame.Vector2(-1, 0),
-            lambda y: pygame.Vector2(
-                SCREEN_WIDTH + ASTEROID_MAX_RADIUS, y * SCREEN_HEIGHT
-            ),
-        ],
-        [
-            pygame.Vector2(0, 1),
-            lambda x: pygame.Vector2(x * SCREEN_WIDTH, -ASTEROID_MAX_RADIUS),
-        ],
-        [
-            pygame.Vector2(0, -1),
-            lambda x: pygame.Vector2(
-                x * SCREEN_WIDTH, SCREEN_HEIGHT + ASTEROID_MAX_RADIUS
-            ),
-        ],
-    ]
+    edges = {
+        "right": {
+            "edge": DIR_RIGHT,
+            "starting_point": lambda y: pg.Vector2(-ASTEROID_MAX_RADIUS, y * SCREEN_HEIGHT),
+        },
+        "left" : {
+            "edge": DIR_LEFT,
+            "starting_point": lambda y: pg.Vector2(SCREEN_WIDTH + ASTEROID_MAX_RADIUS, y * SCREEN_HEIGHT),
+        },
+        "up" : {
+            "edge" : DIR_UP,
+            "starting_point": lambda x: pg.Vector2(x * SCREEN_WIDTH, -ASTEROID_MAX_RADIUS),
+        },
+        "down" : {
+            "edge" : DIR_DOWN,
+            "starting_point" : lambda x: pg.Vector2(x * SCREEN_WIDTH, SCREEN_HEIGHT + ASTEROID_MAX_RADIUS),
+        }
+    }
 
     def __init__(self):
-        pygame.sprite.Sprite.__init__(self, self.containers)
-        self.spawn_timer = 0.0
+        pg.sprite.Sprite.__init__(self, self.containers)
+        self.spawn_timer = 0
 
-    def spawn(self, radius, position, velocity):
-        asteroid = Asteroid(position.x, position.y, radius)
-        asteroid.velocity = velocity
-
-    def update(self, dt):
+    def update(self, dt) -> None:
         self.spawn_timer += dt
-        if self.spawn_timer > ASTEROID_SPAWN_RATE:
-            self.spawn_timer = 0
-
-            # spawn a new asteroid at a random edge
-            edge = random.choice(self.edges)
-            speed = random.randint(40, 100)
-            velocity = edge[0] * speed
-            velocity = velocity.rotate(random.randint(-30, 30))
-            position = edge[1](random.uniform(0, 1))
-            kind = random.randint(1, ASTEROID_KINDS)
-            self.spawn(ASTEROID_MIN_RADIUS * kind, position, velocity)
+        if self.spawn_timer <= ASTEROID_SPAWN_RATE:
+            return
+        
+        # Spawn a new asteroid at a random edge
+        edge = r.choice(list(AsteroidField.edges.keys()))
+        cardinal_speed = AsteroidField.edges[edge]["edge"] * r.randint(40, 100)
+        velocity = cardinal_speed.rotate(r.randint(-30, 30)) # Magic?
+        position = AsteroidField.edges[edge]["starting_point"](r.uniform(0, 1))
+        kind = r.randint(1, ASTEROID_KINDS)
+        Asteroid(position.x, position.y, ASTEROID_MIN_RADIUS * kind, velocity)
+        self.spawn_timer = 0 # Cooldown

@@ -1,30 +1,29 @@
-import pygame
+import pygame as pg
+from constants import STROKE_WIDTH
 
 # Base class for game objects
-class CircleShape(pygame.sprite.Sprite):
-    def __init__(self, x, y, radius):
-        # we will be using this later
+class CircleShape(pg.sprite.Sprite):
+    def __init__(self, x: int, y: int, radius: int):
+
+        # Place reference of itself into container to be managed
         if hasattr(self, "containers"):
             super().__init__(self.containers)
         else:
             super().__init__()
 
-        self.position = pygame.Vector2(x, y)
-        self.velocity = pygame.Vector2(0, 0)
+        self.position = pg.Vector2(x, y)
+        self.velocity = pg.Vector2(0, 0)
         self.radius = radius
 
-    def draw(self, screen):
-        # sub-classes must override
-        pass
+    def draw(self, screen) -> None:
+        pg.draw.circle(screen, "white", self.position, self.radius, STROKE_WIDTH)
 
-    def update(self, dt):
-        # sub-classes must override
-        pass
+    # Default frame action is Newton's 1st law
+    def update(self, dt) -> None:
+        self.position += self.velocity * dt
 
-    def is_collision(self, other):
+    # Radial distance from centers
+    def is_collision(self, other) -> bool:
         distance = self.position.distance_to(other.position)
         total_r = self.radius + other.radius
-        if distance <= total_r:
-            return True
-        else:
-            return False
+        return distance <= total_r

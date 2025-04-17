@@ -1,51 +1,45 @@
-import pygame
+import pygame as pg
 
 from circleshape import CircleShape
-from constants import PLAYER_RADIUS, PLAYER_TURN_SPEED, PLAYER_SPEED, PLAYER_SHOOT_SPEED, PLAYER_SHOOT_COOLDOWN
+from constants import DIR_UP, STROKE_WIDTH, PLAYER_RADIUS, PLAYER_TURN_SPEED, PLAYER_SPEED, PLAYER_SHOOT_SPEED, PLAYER_SHOOT_COOLDOWN
 from shot import Shot
 
+# Does not use velocity, interesting
 class Player(CircleShape):
-    def __init__(self, x, y):
+    def __init__(self, x: int, y: int):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
         self.shoot_timer = 0
+        self.direction = DIR_UP
 
-    def triangle(self):
-        forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        right = pygame.Vector2(0, 1).rotate(self.rotation + 90) * self.radius / 1.5
-        a = self.position + forward * self.radius
-        b = self.position - forward * self.radius - right
-        c = self.position - forward * self.radius + right
+    def triangle(self) -> list[pg.Vector2, pg.Vector2, pg.Vector2]:
+        width = DIR_UP.rotate(self.rotation + 90) * self.radius / 1.5
+        a = self.position + self.direction * self.radius
+        b = self.position - self.direction * self.radius - width
+        c = self.position - self.direction * self.radius + width
         return [a, b, c]
     
-    def draw(self, screen):
-         pygame.draw.polygon(screen, "white", self.triangle(), 2)
+    def draw(self, screen) -> None:
+         pg.draw.polygon(screen, "white", self.triangle(), STROKE_WIDTH) # Magic 2
     
-    def rotate(self, dt):
+    def rotate(self, dt) -> None:
         self.rotation += PLAYER_TURN_SPEED * dt
+        self.direction = DIR_UP.rotate(self.rotation)
     
-    def move(self, dt):
-        forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        self.position += forward * PLAYER_SPEED * dt
+    def move(self, dt) -> None:
+        self.position += self.direction * PLAYER_SPEED * dt
     
-    def update(self, dt):
-        keys = pygame.key.get_pressed()
+    def update(self, dt) -> None:
+        keys = pg.key.get_pressed()
         self.shoot_timer -= dt
 
-        if keys[pygame.K_a]:
-            self.rotate(-dt)
-        if keys[pygame.K_d]:
-            self.rotate(dt)
-        if keys[pygame.K_w]:
-            self.move(dt)
-        if keys[pygame.K_s]:
-            self.move(-dt)
-        if keys[pygame.K_SPACE]:
-            if self.shoot_timer <= 0:
-                self.shoot()
+        if keys[pg.K_a]: self.rotate(-dt)
+        if keys[pg.K_d]: self.rotate(dt)
+        if keys[pg.K_w]: self.move(dt)
+        if keys[pg.K_s]: self.move(-dt)
+        if keys[pg.K_SPACE] and self.shoot_timer <= 0:
+            self.shoot()
         
-    def shoot(self):
-        new_shot = Shot(self.position.x, self.position.y)
-        forward = pygame.Vector2(0, 1).rotate(self.rotation)
-        new_shot.velocity = forward * PLAYER_SHOOT_SPEED
+    def shoot(self) -> None:
+        Shot(self.position.x, self.position.y, self.direction * PLAYER_SHOOT_SPEED)
         self.shoot_timer = PLAYER_SHOOT_COOLDOWN
